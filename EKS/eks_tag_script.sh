@@ -175,7 +175,7 @@ function main(){
       ;;
       3)
 
-        ;;
+      ;;
       4)
         get_eks_subnets
         #####eks集群结合loadbalancer controller所需子网的tag信息###############
