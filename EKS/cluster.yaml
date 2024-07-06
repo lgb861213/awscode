@@ -1,0 +1,40 @@
+# creat eks cluster using an existing vpc, it also creat a manage group
+---
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+metadata:
+  name: aloda-test
+  region: us-east-1 # set the cluster resource region
+  version: "1.30"   # set the eks version
+vpc:
+  id: "vpc-0254190493ff5f1b9" #replace your vpc id
+  cidr: "10.0.0.0/16"  #must match CIDR used by the given VPC
+  subnets:
+    public:
+      us-east-1a:
+        id: "subnet-0192634d3fed67019"
+        cidr: "10.0.0.0/20"
+      us-east-1b:
+        id: "subnet-0691ad1fb096770e9"
+        cidr: "10.0.16.0/20"
+      us-east-1c:
+        id: "subnet-0ab22134bdcb289c5"
+        cidr: "10.0.32.0/20"
+managedNodeGroups:
+  - name: managed-nodes
+    labels:
+      role: managed-nodes
+    instanceType: t3.medium
+    minSize: 2
+    desiredCapacity: 2
+    maxSize: 4
+    volumeSize: 30
+    volumeType: gp3
+    spot: true
+    privateNetworking: true
+    subnets:
+      - subnet-077fda5ffae2c07b4
+      - subnet-0c5a12c11946f81ea
+      - subnet-0abb83e378b00f717
+    ssh:
+      publicKeyName: aloda-us-east-1
