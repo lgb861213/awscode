@@ -145,7 +145,7 @@ function main(){
 #               Menu
 #  1: Add tag key for special vpc all subnets
 #  2: Remove tag key for special vpc all subnets
-#  3: Remove tag key for special vpc all subnets
+#  3: Add or Remove tag key for special subnets
 #  4. Add the tag keys and values required by elb to the eks cluster
 #  5. Remove the tag keys  required by elb to the eks cluster
 #  6. Add the tag key and value required by karpenter to the specified node group of the eks cluster
@@ -174,7 +174,23 @@ function main(){
         done
       ;;
       3)
-
+       #要求输入子网id信息
+       read -p "Enter subnet ID(s) (use spaces to separate multiple IDs): " SUBNETS
+       read -p "Enter the tag key:" TAG_KEY
+       read -p "Enter the tag value:" TAG_VALUE
+       read -p "Enter operation (a for add, r for remove tags): " OPS
+       for subnet in ${SUBNETS};do
+         if [ "$OPS" = "a" ];then
+           echo "正在为${subnet}资源添加标签，该标签的(key)为${TAG_KEY},值为${TAG_VALUE} ..."
+           add_ec2_resource_tag "${subnet}" "${TAG_KEY}" "${TAG_VALUE}"
+         elif [ "$OPS" = "r" ];then
+           echo "正在为${subnet}资源移除标签，该标签的(key)为${TAG_KEY},值为${TAG_VALUE} ..."
+           remove_ec2_resource_tag "${subnet}" "${TAG_KEY}" "${TAG_VALUE}"
+         else
+            echo "Invalid operation. Please enter 'a' or 'r'."
+            exit 1
+         fi
+       done
       ;;
       4)
         get_eks_subnets
