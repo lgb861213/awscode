@@ -149,8 +149,7 @@ function main(){
 #  4. Add the tag keys and values required by elb to the eks cluster
 #  5. Remove the tag keys  required by elb to the eks cluster
 #  6. Add the tag key and value required by karpenter to the specified node group of the eks cluster
-#  7. Add tag key for special vpc subnet
-#  8. Remove tag key for special vpc subnet
+#  7. Remove the tag key and value required by karpenter to the specified node group of the eks cluster
 #  9. Exit
 ##################################################################################################### \033[0m"
   read -p "Please choice[1-9]:"
@@ -225,8 +224,6 @@ function main(){
       6)
         ;;
       7)
-        ;;
-      8)
         ;;
       9)
         exit 0
