@@ -1,4 +1,4 @@
-cat <<EOF |tee aws_route53_delete.py
+#cat <<EOF |tee aws_route53_delete.py
 import boto3
 
 route53 = boto3.client('route53')
@@ -60,7 +60,7 @@ if __name__ == '__main__':
         delete_resource_record_sets(hosted_zone_id)
         delete_hosted_zone(hosted_zone_id)
 
-EOF
-
-
-python aws_route53_delete.py
+# EOF
+#
+#
+# python aws_route53_delete.py
