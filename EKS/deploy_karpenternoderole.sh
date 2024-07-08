@@ -17,3 +17,13 @@ eksctl create iamidentitymapping \
   --arn "arn:aws:iam::${ACCOUNT_ID}:role/KarpenterNodeRole-${CLUSTER_NAME}" \
   --group system:bootstrappers \
   --group system:nodes
+
+#create instace profile
+echo "正在创建 KarpenterNodeInstanceProfile-${CLUSTER_NAME} instance profile..."
+aws iam create-instance-profile \
+    --instance-profile-name "KarpenterNodeInstanceProfile-${CLUSTER_NAME}"
+# attache the  IAM role to an ec2 intance profile
+echo "正在将 KarpenterNodeInstanceProfile-${CLUSTER_NAME} instance profile 关联到 KarpenterNodeRole-${CLUSTER_NAME} 角色..."
+aws iam add-role-to-instance-profile \
+--instance-profile-name "KarpenterNodeInstanceProfile-${CLUSTER_NAME}" \
+--role-name "KarpenterNodeRole-${CLUSTER_NAME}"

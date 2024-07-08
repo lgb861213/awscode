@@ -12,3 +12,7 @@ eksctl create iamserviceaccount \
   --approve
 
 #export KARPENTER_IAM_ROLE_ARN="arn:aws:iam::${ACCOUNT_ID}:role/karpenterControllerRole-${CLUSTER_NAME}"
+
+#create the  ec2 spot linked role
+echo "正在创建 AWSServiceRoleForEC2Spot 角色"
+aws iam create-service-linked-role --aws-service-name spot.amazonaws.com 2> /dev/null || echo 'Already exist'
