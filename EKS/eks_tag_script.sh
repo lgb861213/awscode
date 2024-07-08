@@ -131,6 +131,124 @@ function remove_ec2_resource_tag() {
 }
 
 
+# 函数manage_nodegroup_subnet_tags用于打节点组子网karpenter所需的tag
+manage_nodegroup_subnet_tags() {
+    local CLUSTER_NAME=$1
+    local OPERATION=$2  # 'add' or 'delete'
+    local REGION=${3:-us-east-1}  # 默认为 us-east-1 如果未指定
+
+    if [ -z "$CLUSTER_NAME" ] || [ -z "$OPERATION" ]; then
+        echo "Error: Cluster name and operation (add/delete) are required."
+        echo "Usage: manage_nodegroup_subnet_tags <cluster-name> <add|delete> [region]"
+        echo "If region is not specified, us-east-1 will be used."
+        return 1
+    fi
+
+    if [ "$OPERATION" != "add" ] && [ "$OPERATION" != "delete" ]; then
+        echo "Error: Operation must be either 'add' or 'delete'."
+        return 1
+    fi
+
+    echo "Using region: $REGION"
+
+    for NODEGROUP in $(aws eks list-nodegroups --cluster-name ${CLUSTER_NAME} \
+        --region ${REGION} --query 'nodegroups' --output text); do
+
+        SUBNETS=$(aws eks describe-nodegroup --cluster-name ${CLUSTER_NAME} \
+            --nodegroup-name $NODEGROUP --region ${REGION} \
+            --query 'nodegroup.subnets' --output text)
+        echo "节点组的子网信息: $SUBNETS "
+        if [ -n "$SUBNETS" ]; then
+            if [ "$OPERATION" == "add" ]; then
+                aws ec2 create-tags \
+                    --tags "Key=karpenter.sh/discovery,Value=${CLUSTER_NAME}" \
+                    --resources $SUBNETS --region ${REGION}
+                echo "Added tags to subnets for nodegroup $NODEGROUP in region $REGION"
+            else
+                aws ec2 delete-tags \
+                    --tags "Key=karpenter.sh/discovery" \
+                    --resources $SUBNETS --region ${REGION}
+                echo "Deleted tags from subnets for nodegroup $NODEGROUP in region $REGION"
+            fi
+        else
+            echo "Warning: No subnets found for nodegroup $NODEGROUP in region $REGION"
+        fi
+    done
+}
+
+manage_eks_security_group_tags() {
+    local CLUSTER_NAME=$1
+    local OPERATION=$2  # 'add' or 'delete'
+    local REGION=${3:-us-east-1}  # 默认为 us-east-1 如果未指定
+
+    if [ -z "$CLUSTER_NAME" ] || [ -z "$OPERATION" ]; then
+        echo "Error: Cluster name and operation (add/delete) are required."
+        echo "Usage: manage_eks_security_group_tags <cluster-name> <add|delete> [region]"
+        echo "If region is not specified, us-east-1 will be used."
+        return 1
+    fi
+
+    if [ "$OPERATION" != "add" ] && [ "$OPERATION" != "delete" ]; then
+        echo "Error: Operation must be either 'add' or 'delete'."
+        return 1
+    fi
+
+    echo "Using region: $REGION"
+
+    # 获取第一个节点组
+    NODEGROUP=$(aws eks list-nodegroups --cluster-name ${CLUSTER_NAME} \
+        --region ${REGION} --query 'nodegroups[0]' --output text)
+
+    if [ -z "$NODEGROUP" ]; then
+        echo "Error: No nodegroups found for cluster ${CLUSTER_NAME}"
+        return 1
+    fi
+
+    # 获取启动模板信息
+    LAUNCH_TEMPLATE=$(aws eks describe-nodegroup --cluster-name ${CLUSTER_NAME} \
+        --nodegroup-name ${NODEGROUP} --region ${REGION} \
+        --query 'nodegroup.launchTemplate.{id:id,version:version}' \
+        --output text | tr -s "\t" ",")
+
+    # 尝试获取集群安全组
+    CLUSTER_SG=$(aws eks describe-cluster \
+        --name ${CLUSTER_NAME} --region ${REGION} \
+        --query "cluster.resourcesVpcConfig.clusterSecurityGroupId" --output text)
+
+    # 尝试获取启动模板中的安全组
+    if [ -n "$LAUNCH_TEMPLATE" ]; then
+        TEMPLATE_SG=$(aws ec2 describe-launch-template-versions \
+            --launch-template-id ${LAUNCH_TEMPLATE%,*} --versions ${LAUNCH_TEMPLATE#*,} \
+            --region ${REGION} \
+            --query 'LaunchTemplateVersions[0].LaunchTemplateData.[NetworkInterfaces[0].Groups||SecurityGroupIds]' \
+            --output text)
+    fi
+
+    # 合并安全组
+    SECURITY_GROUPS="${CLUSTER_SG} ${TEMPLATE_SG}"
+
+    if [ -z "$SECURITY_GROUPS" ]; then
+        echo "Error: No security groups found for cluster ${CLUSTER_NAME}"
+        return 1
+    fi
+
+    # 添加或删除标签
+    if [ "$OPERATION" == "add" ]; then
+        aws ec2 create-tags \
+            --tags "Key=karpenter.sh/discovery,Value=${CLUSTER_NAME}" \
+            --resources ${SECURITY_GROUPS} \
+            --region ${REGION}
+        echo "Added karpenter.sh/discovery tag to security groups: ${SECURITY_GROUPS}"
+    else
+        aws ec2 delete-tags \
+            --tags "Key=karpenter.sh/discovery" \
+            --resources ${SECURITY_GROUPS} \
+            --region ${REGION}
+        echo "Removed karpenter.sh/discovery tag from security groups: ${SECURITY_GROUPS}"
+    fi
+}
+
+
 
 function main(){
   # 安装 jq 命令判断
@@ -148,8 +266,8 @@ function main(){
 #  3: Add or Remove tag key for vpcs or subnets or SecurityGroups
 #  4. Add the tag keys and values required by elb to the eks cluster
 #  5. Remove the tag keys  required by elb to the eks cluster
-#  6. Add the tag key and value required by karpenter to the specified node group of the eks cluster
-#  7. Remove the tag key and value required by karpenter to the specified node group of the eks cluster
+#  6. Add or Remove the tag key and value required by karpenter to the specified node group of the eks cluster
+#  7. Add or Remove the tag key and value required by karpenter to the specified node group security group of the eks cluster
 #  9. Exit
 ##################################################################################################### \033[0m"
   read -p "Please choice[1-9]:"
@@ -222,9 +340,18 @@ function main(){
         done
         ;;
       6)
+        read -p "请输入EKS集群名称:" CLUSTER_NAME
+        read -p "Enter operation (add for add, delete for remove tags) for karpenter tag : " OPS
+        read -p "Enter region (press Enter for default us-east-1): " REGION
+        manage_nodegroup_subnet_tags ${CLUSTER_NAME} $OPS $REGION
         ;;
       7)
-        ;;
+        read -p "请输入EKS集群名称:" CLUSTER_NAME
+        read -p "Enter operation (add for add, delete for remove tags) for karpenter tag : " OPS
+        read -p "Enter region (press Enter for default us-east-1): " REGION
+        echo "开始为eks集群的节点组的安全组打tag..."
+        manage_eks_security_group_tags $CLUSTER_NAME $OPS $REGION
+      ;;
       9)
         exit 0
         ;;
