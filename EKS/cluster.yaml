@@ -3,9 +3,9 @@
 apiVersion: eksctl.io/v1alpha5
 kind: ClusterConfig
 metadata:
-  name: aloda-test
+  name: aloda-test-karpenter
   region: us-east-1 # set the cluster resource region
-  version: "1.30"   # set the eks version
+  version: "1.29"   # set the eks version
 vpc:
   id: "vpc-0254190493ff5f1b9" #replace your vpc id
   cidr: "10.0.0.0/16"  #must match CIDR used by the given VPC

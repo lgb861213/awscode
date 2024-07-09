@@ -1,5 +1,5 @@
 #!/bin/bash
-export CLUSTER_NAME=aloda-test #replace your eks cluster name
+export CLUSTER_NAME=aloda-test-karpenter #replace your eks cluster name
 ACCOUNT_ID=$(aws sts get-caller-identity --query "Account" --output text)
 eksctl utils associate-iam-oidc-provider --cluster ${CLUSTER_NAME} --approve
 sleep 1

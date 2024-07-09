@@ -1,6 +1,6 @@
 #! /bin/bash
 
-export CLUSTER_NAME="aloda-test" #replace your eks cluster name
+export CLUSTER_NAME="aloda-test-karpenter" #replace your eks cluster name
 export KARPENTER_VERSION="0.36.2" # Replace with the Karpenter version number you intend to deploy
 export KARPENTER_NAMESPACE="karpenter" # Replace with the karpenter namespace name you intend to deploy
 ACCOUNT_ID=$(aws sts get-caller-identity --query "Account" --output text)
@@ -37,6 +37,7 @@ fi
 # 如果所有检查都通过，继续安装
 echo "所有必需的角色和实例配置文件都存在，可以继续安装 Karpenter"
 
+#  --set "settings.defaultInstanceProfile=${KARPENTER_NODE_INSTANCE_PROFILE_NAME}" \
 #helm registry logout public.ecr.aws
 export http_proxy=http://127.0.0.1:1081 #若有使用proxy则可以做启用，需要将1081替换成proxy使用的端口号
 helm upgrade --install karpenter oci://public.ecr.aws/karpenter/karpenter --version "${KARPENTER_VERSION}" \
@@ -44,7 +45,6 @@ helm upgrade --install karpenter oci://public.ecr.aws/karpenter/karpenter --vers
   --set serviceAccount.create=true \
   --set serviceAccount.name=karpenter \
   --set "serviceAccount.annotations.eks\.amazonaws\.com/role-arn=${KARPENTER_IAM_ROLE_ARN}" \
-  --set "settings.defaultInstanceProfile=${KARPENTER_NODE_INSTANCE_PROFILE_NAME}" \
   --set "settings.clusterName=${CLUSTER_NAME}" \
   --set "settings.interruptionQueueName=${CLUSTER_NAME}" \
   --set controller.resources.requests.cpu=1 \

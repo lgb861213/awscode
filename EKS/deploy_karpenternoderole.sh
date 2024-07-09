@@ -1,7 +1,7 @@
 #!/bin/bash
-export KARPENTER_VERSION=0.37 #Replace with the Karpenter version number you intend to deploy
-export CLUSTER_NAME=aloda-test #replace your  eks cluster name
-
+export KARPENTER_VERSION=0.36 #Replace with the Karpenter version number you intend to deploy
+export CLUSTER_NAME=aloda-test-karpenter #replace your  eks cluster name
+ACCOUNT_ID=$(aws sts get-caller-identity --query "Account" --output text)
 TEMPOUT=$(mktemp)
 
 curl -fsSL https://raw.githubusercontent.com/aws/karpenter-provider-aws/main/website/content/en/v${KARPENTER_VERSION}/getting-started/getting-started-with-karpenter/cloudformation.yaml > $TEMPOUT \
