@@ -5,7 +5,7 @@ kind: ClusterConfig
 metadata:
   name: aloda-test-karpenter
   region: us-east-1 # set the cluster resource region
-  version: "1.29"   # set the eks version
+  version: "1.30"   # set the eks version
 vpc:
   id: "vpc-0254190493ff5f1b9" #replace your vpc id
   cidr: "10.0.0.0/16"  #must match CIDR used by the given VPC
@@ -21,9 +21,9 @@ vpc:
         id: "subnet-0ab22134bdcb289c5"
         cidr: "10.0.32.0/20"
 managedNodeGroups:
-  - name: managed-nodes
+  - name: test-nodes
     labels:
-      role: managed-nodes
+      role: test-nodes
     instanceType: t3.medium
     minSize: 2
     desiredCapacity: 2

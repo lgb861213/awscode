@@ -1,7 +1,7 @@
 #! /bin/bash
 
 export CLUSTER_NAME="aloda-test-karpenter" #replace your eks cluster name
-export KARPENTER_VERSION="0.36.2" # Replace with the Karpenter version number you intend to deploy
+export KARPENTER_VERSION="0.37.0" # Replace with the Karpenter version number you intend to deploy
 export KARPENTER_NAMESPACE="karpenter" # Replace with the karpenter namespace name you intend to deploy
 ACCOUNT_ID=$(aws sts get-caller-identity --query "Account" --output text)
 export KARPENTER_IAM_ROLE_NAME="karpenterControllerRole-${CLUSTER_NAME}"
