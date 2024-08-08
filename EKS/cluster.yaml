@@ -1,11 +1,14 @@
 # creat eks cluster using an existing vpc, it also creat a manage group
 ---
+#创建EKS集群并且使用已存在的VPC模板
 apiVersion: eksctl.io/v1alpha5
 kind: ClusterConfig
 metadata:
   name: aloda-test-karpenter
   region: us-east-1 # set the cluster resource region
   version: "1.30"   # set the eks version
+iam:
+  withOIDC: true    # OIDC配置，很重要，AWS Loadbalancer Controller等addon都需要
 vpc:
   id: "vpc-0254190493ff5f1b9" #replace your vpc id
   cidr: "10.0.0.0/16"  #must match CIDR used by the given VPC
@@ -20,6 +23,11 @@ vpc:
       us-east-1c:
         id: "subnet-0ab22134bdcb289c5"
         cidr: "10.0.32.0/20"
+#cloudWatch:
+#  clusterLogging:
+#    enableTypes: ["api", "audit", "authenticator", "controllerManager","scheduler"]   # 开启控制平面的日志功能，日志输出到cloudwatch的日志组里
+#    # all supported types: "api", "audit", "authenticator", "controllerManager", "scheduler"
+#    # supported special values: "*" and "all"
 managedNodeGroups:
   - name: test-nodes
     labels:
@@ -38,3 +46,5 @@ managedNodeGroups:
       - subnet-0abb83e378b00f717
     ssh:
       publicKeyName: aloda-us-east-1
+
+
